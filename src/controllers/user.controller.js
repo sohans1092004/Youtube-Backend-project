@@ -281,7 +281,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   if (!avatar.url) throw new ApiError(400, "Error while uploading on avatar");
 
   const user = await User.findByIdAndUpdate(
-    res.user?._id,
+    req.user?._id,
     { $set: { avatar: avatar.url } },
     { new: true }
   ).select("-password");
@@ -302,7 +302,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Error while uploading cover Image");
 
   const user = await User.findByIdAndUpdate(
-    res.user?._id,
+    req.user?._id,
     { $set: { coverImage: coverImage.url } },
     { new: true }
   ).select("-password");
@@ -351,7 +351,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         },
         isSubscribed: {
           $cond: {
-            if: { $in: [req.user?._id, "subscribers.subscriber"] },
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
             then: true,
             else: false,
           },

@@ -144,8 +144,8 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        refreshToken: 1,
       },
     },
     {
@@ -170,47 +170,56 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     req.cookies.refreshToken || req.body.refreshToken;
 
   if (!incomingRefreshToken) {
-    throw new ApiError(401, "unauthorized request");
+    throw new ApiError(401, "Unauthorized request");
   }
 
+  let decoded;
   try {
-    const decodedToken = jwt.verify(
+    decoded = jwt.verify(
       incomingRefreshToken,
       process.env.REFRESH_TOKEN_SECRET
     );
-
-    const user = await User.findById(decodedToken?._id);
-
-    if (!user) throw new ApiError(401, "Invalid refresh token");
-
-    if (user?.refreshToken !== incomingRefreshToken)
-      throw new ApiError(401, "Refresh token is epired or used");
-
-    const options = {
-      httpOnly: true,
-      secure: true,
-    };
-
-    const { accessToken, newRefreshToken } =
-      await generateAccessAndRefreshTokens(user._id);
-
-    return res
-      .status(200)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", newRefreshToken, options)
-      .json(
-        new ApiResponse(
-          200,
-          {
-            accessToken,
-            refreshToken: newRefreshToken,
-          },
-          "Access Token refreshed successfully"
-        )
-      );
-  } catch (error) {
-    throw new ApiError(401, error?.message || "Invalid Refresh Token");
+  } catch (err) {
+    throw new ApiError(401, "Invalid refresh token");
   }
+
+  // Use the same field name you signed with:
+  const userId = decoded._id;
+  if (!userId) {
+    throw new ApiError(401, "Invalid refresh token payload");
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(401, "User not found for this token");
+  }
+
+  // Now safe to compare:
+  if (incomingRefreshToken !== user.refreshToken) {
+    throw new ApiError(401, "Refresh token expired or already used");
+  }
+
+  // Generate a new pair
+  const { AccessToken, RefreshToken } =
+    await generateAccessAndRefreshTokens(user._id);
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+    // you can add sameSite, domain, etc. as needed
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", AccessToken, cookieOptions)
+    .cookie("refreshToken", RefreshToken, cookieOptions)
+    .json(
+      new ApiResponse(
+        200,
+        { accessToken: AccessToken, refreshToken: RefreshToken },
+        "Access token refreshed successfully"
+      )
+    );
 });
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
@@ -319,7 +328,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     {
       $lookup: {
         from: "subscriptions",
-        localField: _id,
+        localField: "_id",
         foreignField: "channel",
         as: "subscribers",
       },
@@ -327,7 +336,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     {
       $lookup: {
         from: "subscriptions",
-        localField: _id,
+        localField: "_id",
         foreignField: "subscriber",
         as: "subscribedTo",
       },
@@ -376,7 +385,7 @@ const getUserWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
       $match:{
-        _id: new mongoose.Types.ObjectId(req.user._id)
+        _id: req.user._id
       }
     },
     {

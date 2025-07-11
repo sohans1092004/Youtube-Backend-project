@@ -2,6 +2,7 @@ import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 export const verifyJWT = asyncHandler(async(req,_,next) => {
     try {
@@ -20,7 +21,7 @@ export const verifyJWT = asyncHandler(async(req,_,next) => {
         req.user = user;
         next()
     } catch (error) {
-        throw new ApiError(401,error?.message || "Inalid Access Token")
+        throw new ApiError(401,error?.message || "Invalid Access Token")
     }
 
 });

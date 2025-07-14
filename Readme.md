@@ -47,7 +47,7 @@ This serves as a strong foundation for any MERN stack or API-driven project.
 | Layer | Technology |
 | --- | --- |
 | Backend | Node.js, Express |
-| Database | MongoDB, Mongoose |
+| Database | MongoDB, Mongoose, Cloudinary|
 | Security | JWT, bcrypt |
 | Tools | dotenv, nodemon |
 

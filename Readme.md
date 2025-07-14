@@ -95,7 +95,7 @@ Contributions are welcome! To contribute:
 
  5\.  **Open a Pull Request**
 
-We appreciate your effort—thank you for helping improve this project! 😊
+We appreciate your effort—thank you for helping improve this project! 
 
 ## 📜 License
 
